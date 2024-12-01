@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include <cmath>
+#include <iostream>
 
 #include "station.h"
 #include "satellite_renderer.h"
@@ -11,6 +12,9 @@
 #include "link_manager_3d.h"
 
 constexpr float twopi = 2.f * 3.1415926535898f;
+
+constexpr Milliseconds simTime  = 200 * 1000;
+// constexpr Milliseconds simTime  = 200 * 10000000;
 
 using namespace std::chrono;
 
@@ -26,8 +30,11 @@ int main(int argc, char** argv) {
         stations[i].deviceId = i;
     }
 
+    std::cout << "There are " << satellites.size() << " satellites and " << groundStations.size() << " ground stations making " << stations.size() << " total stations.\n";
+
     LinkManager3d links;
     links.loadLinks("isls.txt");
+    links.setRouteFolder("routes", 50, simTime);
 
     SatelliteRenderer renderer;
     renderer.scale = 1.f / 20000;
@@ -48,8 +55,9 @@ int main(int argc, char** argv) {
 
     //decouple tick rate and update rate
 
+    Milliseconds elapsed = 0;
     // amount of time to tick the simulation forward
-    Milliseconds tickAmount = 50;
+    Milliseconds tickAmount = 50 * 50;
     // amount of time between updates to the simulation
     auto physics_rate = milliseconds(50); // when this and the above match you're running in real time
     // frame rate
@@ -58,13 +66,21 @@ int main(int argc, char** argv) {
     auto last_physics = high_resolution_clock::now();
     auto last_render = last_physics;
 
+
     for(;;) {
         auto now = high_resolution_clock::now();
 
         if(duration_cast<milliseconds>(now - last_physics) > physics_rate) {
             last_physics = now;
-            for(auto& station : stations) {
-                station.update(tickAmount);
+
+            elapsed += tickAmount;
+            if(elapsed < simTime) {
+            // std::cout << "elapsed " << elapsed << '\n';
+                for(auto& station : stations) {
+                    station.update(tickAmount);
+                }
+
+                links.updateRoutes(tickAmount);
             }
         }
 
@@ -98,7 +114,8 @@ int main(int argc, char** argv) {
 
             window.clear(sf::Color::Black);
             renderer.drawSatellites(stations, window);
-            links.draw(stations, window, renderer.cam);
+            // links.drawLinks(stations, window, renderer.cam);
+            links.drawRoutes(stations, window, renderer.cam);
             window.display();
         }
     }

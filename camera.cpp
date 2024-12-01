@@ -16,7 +16,7 @@ Vec3 Camera::project(const Vec3& targetPos) const {
     Vec3 translated = targetPos - pos;
     Vec3 aligned = {
         translated.dot(right),
-        translated.dot(up),
+        -translated.dot(up),
         translated.dot(forward)
     };
     return aligned;
