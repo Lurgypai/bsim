@@ -1,9 +1,10 @@
 #include "router.h"
 
-NetDevice* Router::findNext(NetDeviceId curId, NetDeviceId destId) {
+void Router::update(Milliseconds delta, StationManager& stations, LinkManager& links) {
+    impl->update(delta, stations, links);
+}
+
+NetDeviceId Router::findNext(NetDeviceId curId, NetDeviceId destId) {
     return impl->findNext(curId, destId);
 }
 
-RouterImpl* Router::getImpl() {
-    return impl.get();
-}

@@ -2,6 +2,8 @@
 #include <memory>
 
 #include "netdevice.h"
+#include "station_manager.h"
+#include "link_manager.h"
 
 class RouterImpl;
 
@@ -12,11 +14,11 @@ public:
     Router(const Router& other) = delete;
     Router& operator=(const Router& other) = delete;
 
-    NetDevice* findNext(NetDeviceId curId, NetDeviceId destId);
+    void update(Milliseconds delta, StationManager& stations, LinkManager& links);
+
+    NetDeviceId findNext(NetDeviceId curId, NetDeviceId destId);
     template <typename Impl, typename... Args>
     void loadImpl(Args&&... args);
-
-    RouterImpl* getImpl();
 private:
     std::unique_ptr<RouterImpl> impl;
 };
@@ -31,5 +33,6 @@ class RouterImpl {
 public:
     virtual ~RouterImpl() {}
 private:
-    virtual NetDevice* findNext(NetDeviceId curId, NetDeviceId destId) = 0;
+    virtual NetDeviceId findNext(NetDeviceId curId, NetDeviceId destId) = 0;
+    virtual void update(Milliseconds delta, StationManager& stations, LinkManager& links) = 0;
 };

@@ -17,10 +17,10 @@ void NetDevice::queue(const Packet& packet) {
     packets.push_back(packet);
 }
 
-void NetDevice::update(Milliseconds delta) {
+void NetDevice::update(Milliseconds delta, Router& router) {
 
     if(tx_remaining == 0) endSend();
-    if(!isSending_) beginSend();
+    if(!isSending_) beginSend(router);
     if(isSending_) continueSend(delta);
 }
 
@@ -49,12 +49,12 @@ void NetDevice::continueSend(Milliseconds delta) {
     else tx_remaining = 0;
 }
 
-void NetDevice::beginSend() {
+void NetDevice::beginSend(Router& router) {
     // nothing to send
     if (packets.empty()) return;
 
     Packet nextPacket = packets.front();
-    curNextDevice = router->findNext(id, nextPacket.target);
+    curNextDevice = router.findNext(id, nextPacket.target);
 
     // route currently doesn't exist
     if(curNextDevice == nullptr) return;

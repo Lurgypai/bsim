@@ -118,7 +118,8 @@ void LinkManager3d::drawRoutes(const std::vector<Station>& stations, sf::RenderW
             p2 *= scale;
 
             auto color = sf::Color::Red;
-            if(sourceId > 1584 || nextId > 1584) color = sf::Color::Green;
+            constexpr int groundStationThreshold = 1584;
+            if(sourceId >= groundStationThreshold || nextId >= groundStationThreshold) color = sf::Color::Green;
 
             sf::Vertex line[]{
                 sf::Vertex{sf::Vector2f{static_cast<float>(p1.x), static_cast<float>(p1.y)}, color},

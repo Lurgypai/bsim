@@ -18,13 +18,12 @@ public:
     NetDevice& operator=(const NetDevice& other) = default;
 
     static constexpr Milliseconds TX_DELAY = 50;
-    static Router* router;
 
     // Sends/Queues a packet
     void queue(const Packet& packet);
 
     // Sends queued packets
-    void update(Milliseconds delta);
+    void update(Milliseconds delta, Router& router);
 
     bool isSending() const;
     bool isReceiving() const;
@@ -36,7 +35,7 @@ public:
     Milliseconds getTxRemaining() const;
 private:
     void continueSend(Milliseconds delta);
-    void beginSend();
+    void beginSend(Router& router);
     void endSend();
     void beginReceive();
     void endReceive();
