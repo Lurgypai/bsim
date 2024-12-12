@@ -11,7 +11,7 @@ LinkManager& LinkManager::operator=(const LinkManager& other) {
     return *this;
 }
 
-void LinkManager::loadLinks() {
+void LinkManager::load() {
     links = loader->loadLinks();
 }
 
@@ -20,5 +20,9 @@ void LinkManager::updateLinks(Milliseconds delta) {
 }
 
 const Link& LinkManager::getLink(NetDeviceId source, NetDeviceId dest) const {
+    return links.at(source).at(dest);
+}
+
+Link& LinkManager::getLink(NetDeviceId source, NetDeviceId dest) {
     return links.at(source).at(dest);
 }

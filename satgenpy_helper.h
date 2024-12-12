@@ -1,11 +1,17 @@
 #pragma once
 
 #include <vector>
-#include<string>
+#include <string>
 
-#include "link_manager.h"
+#include "types.h"
 
 namespace RouteHelper {
+    struct RouteStep {
+        NetDeviceId cur;
+        NetDeviceId dest;
+        NetDeviceId next;
+    };
+
     std::vector<std::string> split_string(const std::string& line, const std::string& delimiter);
-    LinkMap readRoutesFile(const std::string& fileName);
+    std::vector<RouteStep>  readRoutesFile(const std::string& fileName);
 }

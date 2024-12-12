@@ -1,5 +1,22 @@
-#pragma once
 #include "topology.h"
+
+#include <SFML/Graphics.hpp>
+
+Topology::Topology() :
+    cam{},
+    netDeviceManager{},
+    stationManager{},
+    linkManager{},
+    router{},
+    stations{}
+{
+    stations.emplace_back(
+        AssignedCircle{-1, 0., sf::CircleShape{300}}
+    );
+    auto& earth = stations.back();
+    earth.shape.setFillColor(sf::Color::Blue);
+    earth.shape.setOrigin(earth.shape.getRadius(), earth.shape.getRadius());
+}
 
 // try to start sending data if there is data available
 static void tryBeginSend(NetDevice& device,
@@ -7,49 +24,67 @@ static void tryBeginSend(NetDevice& device,
                          NetDeviceManager& netDevices,
                          Router& router) {
     if(!device.hasPackets()) return;
-    if(device.isBusy()) return;
 
-    // for each next packet
-    //      attempt to send
-    //      if sending
-    //          add to in flight packets
+    // go until we hit the max concurrent links active
+    // this will cause devices that are update earlier to have sending precedence.
+    while(!device.isBusy()) {
+        const Packet& nextPacket = device.peekNextPacket();
+        NetDeviceId nextDeviceId = router.findNext(device.getId(), nextPacket.target);
 
-    Packet* nextPacket = device.peekNextPacket();
-    NetDeviceId nextDeviceId = router.findNext(device.getId(), nextPacket->target);
+        // get the link this will send over
+        // check if its busy
+        Link& upLink = links.getLink(device.getId(), nextDeviceId);
+        if(upLink.busy) return;
 
-    // get the link this will send over
-    // check if its busy
-    Link& upLink = links.getLink(device.getId(), nextDeviceId);
-    if(upLink.busy) return;
+        Link& downLink = links.getLink(nextDeviceId, device.getId());
+        if(downLink.busy) return;
 
-    Link& downLink = links.getLink(nextDeviceId, device.getId());
-    if(downLink.busy) return;
+        // get the receiving net device, and increment its active links
+        NetDevice& nextDevice = netDevices.getNetDevice(nextDeviceId);
+        device.addActiveLink();
+        nextDevice.addActiveLink();
 
-    // get the receiving net device, and increment its active links
-    NetDevice& nextDevice = netDevices.getNetDevice(nextDeviceId);
-    netDevice.addActiveLink();
+        // pop the packet and set up an in flight entry to track its progress
+        device.putNextInFlight(&nextDevice);
 
-    // set the uplink and downlink as active, and set their packet handle
-    upLink.busy = true;
-    upLink.packetHandle = nextPacket;
-
-    downLink.busy = true;
-    downLink.packetHandle = nextPacket;
+        // set the uplink and downlink as active
+        upLink.busy = true;
+        downLink.busy = true;
+    }
 }
 
 static void continueSend(NetDevice& device, Milliseconds delta) {
+    // decrement time of each in flight packet
     device.continueSend(delta);
 }
 
-static void endSend(NetDevice& device) {
+static void endSend(NetDevice& device,
+                    LinkManager& links) {
     // for each in flight packet
-    //      if its done sending
-    //          close the link
-    //          decrement active links
-    //          remove from in flight packets
-    //          queue the packet on the receiving net device
+    auto& inFlightPackets = device.getInFlightPackets();
+    for(auto iter = inFlightPackets.begin(); iter != inFlightPackets.end(); ++iter) {
+        if(iter->txRemaining != 0) continue;
 
-}
+        auto& destDevice = *(iter->dest);
+        NetDeviceId destId = destDevice.getId();
+
+        // set links as available
+        Link& upLink = links.getLink(device.getId(), destId);
+        Link& downLink = links.getLink(destId, device.getId());
+        upLink.busy = false;
+        downLink.busy = false;
+
+        // derement active links
+        device.removeActiveLink();
+        destDevice.removeActiveLink();
+
+        // queue on destination device (stops the packet if destination)
+        destDevice.queue(iter->packet);
+
+        // remove from in flight
+        iter = inFlightPackets.erase(iter);
+    }
+}   
 
 void Topology::update(Milliseconds delta) {
     stationManager.update(delta);
@@ -60,13 +95,48 @@ void Topology::update(Milliseconds delta) {
 
     for(auto& netDevice : netDeviceManager) {
         tryBeginSend(netDevice, linkManager, netDeviceManager, router);
-        continueSend(netDevice);
-        endSend(netDevice);
+        continueSend(netDevice, delta);
+        endSend(netDevice, linkManager);
     }
 }
 
-// net device needs to store in flight packets
-//  in flight
-//      packet being sent
-//      target network device
-//      link being used <- can be retrieved from the source and des:wq
+void Topology::loadAll() {
+    netDeviceManager.load();
+    stationManager.load();
+    linkManager.load();
+}
+
+void Topology::prepareRendering() {
+    const auto& stationsToRender = stationManager.getStations();
+
+    for(int id = 0; id != stationsToRender.size(); ++id) {
+        stations.emplace_back(
+                AssignedCircle{id, 0., sf::CircleShape{5}}
+        );
+        auto& station = stations.back();
+        station.shape.setOrigin(station.shape.getRadius(), station.shape.getRadius());
+
+        if(stationsToRender[id].tag == "ground") station.shape.setFillColor(sf::Color::Green);
+        else station.shape.setFillColor(sf::Color::Red);
+    }
+}
+
+void Topology::draw(sf::RenderTarget& target) {
+    for(auto& circle : stations) {
+        if(circle.id < 0) continue; // earth
+        auto& station = stationManager.getStations()[circle.id];
+        //std::cout << station.pos.x << ", " << station.pos.y << ", " << station.pos.z << '\n';
+
+        Vec3 pos = cam.project(station.pos);
+        circle.z = pos.z;
+        circle.shape.setPosition(pos.x, pos.y);
+    }
+    stations.sort(
+        [](const AssignedCircle& a, const AssignedCircle& b) -> bool {
+        return a.z < b.z;
+    });
+
+    for(auto& station : stations) {
+        target.draw(station.shape);
+    }
+}

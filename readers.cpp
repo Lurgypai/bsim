@@ -38,6 +38,7 @@ std::vector<Station> readGroundStations(const std::string& fileName) {
             std::stof(vals[6]),
             std::stof(vals[7])
         };
+        stations.back().tag = "ground";
     }
 
     return stations;
@@ -72,6 +73,7 @@ std::vector<Station> readSatellites(const std::string& fileName) {
         //store second tle and create satellite
         stations.push_back(Station{});
         stations.back().loadMover<TleMover>(tle1, line);
+        stations.back().tag = "satellite";
     }
 
     return stations;

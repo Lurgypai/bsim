@@ -17,6 +17,7 @@ public:
     void setOrientation(const Vec3& lookAt, const Vec3& up);
 
     Vec3 pos;
+    float scale;
 private:
     Vec3 boxMin;
     Vec3 boxMax;

@@ -20,8 +20,7 @@ private:
         NetDeviceId id;
         Vec3::Type z;
         sf::CircleShape shape;
-
-
     };
+
     std::list<AssignedCircle> satellites;
 };

@@ -1,17 +1,14 @@
 #pragma once
 
 #include <unordered_map>
-#include <vector>
 #include <memory>
 
 #include "types.h"
-#include "packet.h"
 
 struct Link {
     NetDeviceId source;
     NetDeviceId dest;
     bool busy;
-    Packet* packetHandle;
 };
 
 using LinkMap = std::unordered_map<NetDeviceId, std::unordered_map<NetDeviceId, Link>>;
@@ -33,9 +30,9 @@ public:
     LinkManager& operator=(const LinkManager& other);
 
     template<typename Loader, typename... Args>
-    Loader& loadLinkLoader(Args&&... args);
+    Loader& setLoader(Args&&... args);
 
-    void loadLinks();
+    void load();
     void updateLinks(Milliseconds delta);
     const Link& getLink(NetDeviceId source, NetDeviceId target) const;
     Link& getLink(NetDeviceId source, NetDeviceId target);
@@ -45,6 +42,7 @@ private:
 };
 
 template<typename Loader, typename... Args>
-Loader& LinkManager::loadLinkLoader(Args&&... args) {
+Loader& LinkManager::setLoader(Args&&... args) {
     loader = std::make_unique<Loader>(std::forward<Args>(args)...);
+    return *static_cast<Loader*>(loader.get());
 }

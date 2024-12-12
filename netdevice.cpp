@@ -1,43 +1,62 @@
 #include "netdevice.h"
-#include "router.h"
-#include <exception>
+#include <stdexcept>
 
 NetDevice::NetDevice(NetDeviceId id_) :
     id{id_},
-    tx_remaining{0},
     packets{},
-    curNextDevice{nullptr},
-    receiving{},
-    isSending_{false},
-    isReceiving_{false},
-    receivedCount{0}
+    inFlightPackets{},
+    receivedCount{0},
+    curActiveLinks{0},
+    maxActiveLinks{0}
 {}
 
 void NetDevice::queue(const Packet& packet) {
+    if(packet.target == id) {
+        ++receivedCount;
+        return;
+    }
+
     packets.push_back(packet);
 }
 
-void NetDevice::update(Milliseconds delta, Router& router) {
-
-    if(tx_remaining == 0) endSend();
-    if(!isSending_) beginSend(router);
-    if(isSending_) continueSend(delta);
+bool NetDevice::hasPackets() const {
+    return packets.size() > 0;
 }
 
-bool NetDevice::isSending() const {
-    return isSending_;
+bool NetDevice::isBusy() const {
+    return curActiveLinks == maxActiveLinks;
 }
 
-bool NetDevice::isReceiving() const {
-    return isReceiving_;
+const Packet& NetDevice::peekNextPacket() const {
+    return packets.back();
 }
+
+void NetDevice::addActiveLink() {
+    ++curActiveLinks;
+}
+
+void NetDevice::removeActiveLink() {
+    if(curActiveLinks == 0) throw std::runtime_error{"Tried to remove an active link with no links"};
+    --curActiveLinks;
+}
+
+void NetDevice::putNextInFlight(NetDevice* nextDevice) {
+    inFlightPackets.push_back(InFlightPacket{
+        packets.back(),
+        nextDevice,
+        TX_DELAY
+    });
+
+    packets.pop_back();
+}
+
+std::vector<InFlightPacket>& NetDevice::getInFlightPackets() {
+    return inFlightPackets;
+}
+
 
 NetDeviceId NetDevice::getId() const {
     return id;
-}
-
-const NetDevice* NetDevice::getNextDevice() const {
-    return curNextDevice;
 }
 
 int NetDevice::getReceivedCount() const {
@@ -45,52 +64,9 @@ int NetDevice::getReceivedCount() const {
 }
 
 void NetDevice::continueSend(Milliseconds delta) {
-    if(tx_remaining > delta) tx_remaining -= delta;
-    else tx_remaining = 0;
+    for(auto& packet : inFlightPackets) {
+        auto& txRemaining = packet.txRemaining;
+        if(txRemaining > delta) txRemaining -= delta;
+        else txRemaining = 0;
+    }
 }
-
-void NetDevice::beginSend(Router& router) {
-    // nothing to send
-    if (packets.empty()) return;
-
-    Packet nextPacket = packets.front();
-    curNextDevice = router.findNext(id, nextPacket.target);
-
-    // route currently doesn't exist
-    if(curNextDevice == nullptr) return;
-
-    // we've been routed to ourselves, thats no good
-    if(curNextDevice->id == id) throw std::exception{};
-
-    // target device is busy
-    if(curNextDevice->isReceiving_) return;
-
-    packets.pop_front();
-    tx_remaining = TX_DELAY;
-    isSending_ = true;
-
-    curNextDevice->receiving = nextPacket;
-    curNextDevice->beginReceive();
-}
-
-void NetDevice::endSend() {
-    if(!isSending_ || !curNextDevice) return;
-    isSending_ = false;
-    curNextDevice->endReceive();
-}
-
-void NetDevice::beginReceive() {
-    isReceiving_ = true;
-}
-
-void NetDevice::endReceive() {
-    if(receiving.target != id) queue(receiving);
-    isReceiving_ = false;
-    ++receivedCount;
-}
-
-Milliseconds NetDevice::getTxRemaining() const {
-    return tx_remaining;
-}
-
-Router* NetDevice::router = nullptr;

@@ -16,7 +16,8 @@ public:
     template<typename Loader, typename... Args>
     Loader& setLoader(Args&&... args);
 
-    void genNetDevices(int count);
+    void load();
+
     const NetDevice& getNetDevice(NetDeviceId id) const;
     NetDevice& getNetDevice(NetDeviceId id);
 
@@ -30,4 +31,5 @@ private:
 template<typename Loader, typename... Args>
 Loader& NetDeviceManager::setLoader(Args&&... args) {
     loader = std::make_unique<Loader>(std::forward<Args>(args)...);
+    return *static_cast<Loader*>(loader.get());
 }

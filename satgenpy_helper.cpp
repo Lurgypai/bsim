@@ -15,7 +15,7 @@ std::vector<std::string> RouteHelper::split_string(const std::string& line, cons
     return result;
 }
 
-LinkMap RouteHelper::readRoutesFile(const std::string& fileName) {
+std::vector<RouteHelper::RouteStep> RouteHelper::readRoutesFile(const std::string& fileName) {
     // std::cout << "Reading routes file " << fileName << '\n';
     std::ifstream stateFile{fileName};
     if(!stateFile.good()) {
@@ -23,7 +23,7 @@ LinkMap RouteHelper::readRoutesFile(const std::string& fileName) {
         throw std::runtime_error{e};
     }
 
-    LinkMap map;
+    std::vector<RouteStep> steps;
 
     std::string line;
     while(std::getline(stateFile, line)) {
@@ -31,9 +31,12 @@ LinkMap RouteHelper::readRoutesFile(const std::string& fileName) {
         NetDeviceId sourceId = std::stoi(v[0]);
         NetDeviceId targetId = std::stoi(v[1]);
         NetDeviceId nextId = std::stoi(v[2]);
-        Link l{sourceId, nextId};
-        map[sourceId].push_back(l);
+        steps.push_back({
+            sourceId,
+            targetId,
+            nextId
+        });
     }
 
-    return map;
+    return steps;
 }

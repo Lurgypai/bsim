@@ -19,7 +19,7 @@ Vec3 Camera::project(const Vec3& targetPos) const {
         -translated.dot(up),
         translated.dot(forward)
     };
-    return aligned;
+    return aligned * scale;
 }
 
 void Camera::setOrientation(const Vec3& lookAt, const Vec3& up_) {

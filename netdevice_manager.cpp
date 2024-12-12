@@ -1,12 +1,8 @@
 #include "netdevice_manager.h"
 #include <vector>
 
-void NetDeviceManager::genNetDevices(int count) {
-    devices.clear();
-    devices.reserve(count);
-    for(int i = 0; i != count; ++i) {
-        devices.emplace_back(i);
-    }
+void NetDeviceManager::load() {
+    devices = loader->loadNetDevices();
 }
 
 const NetDevice& NetDeviceManager::getNetDevice(NetDeviceId id) const {

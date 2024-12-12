@@ -18,14 +18,15 @@ public:
 
     NetDeviceId findNext(NetDeviceId curId, NetDeviceId destId);
     template <typename Impl, typename... Args>
-    void loadImpl(Args&&... args);
+    Impl& loadImpl(Args&&... args);
 private:
     std::unique_ptr<RouterImpl> impl;
 };
 
 template<typename Impl, typename... Args>
-void Router::loadImpl(Args&&... args) {
+Impl& Router::loadImpl(Args&&... args) {
     impl = std::make_unique<Impl>(std::forward<Args>(args)...);
+    return *static_cast<Impl*>(impl.get());
 }
 
 class RouterImpl {

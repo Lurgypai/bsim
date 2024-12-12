@@ -1,15 +1,13 @@
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Window/Keyboard.hpp>
-#include <vector>
+#include <SFML/Graphics.hpp>
+
 #include <chrono>
-
 #include <cmath>
-#include <iostream>
 
-#include "station.h"
-#include "satellite_renderer.h"
-#include "readers.h"
-#include "link_manager_3d.h"
+#include "topology.h"
+#include "base_netdevice_loader.h"
+#include "satgenpy_station_loader.h"
+#include "satgenpy_link_loader.h"
+#include "satgenpy_router_impl.h"
 
 constexpr float twopi = 2.f * 3.1415926535898f;
 
@@ -20,29 +18,18 @@ using namespace std::chrono;
 
 int main(int argc, char** argv) {
 
-    std::vector<Station> groundStations = readGroundStations("ground_stations.txt");
-    std::vector<Station> satellites = readSatellites("tles.txt");
-    std::vector<Station> stations;
-    stations.reserve(groundStations.size() + satellites.size());
-    stations.insert(stations.end(), satellites.begin(), satellites.end());
-    stations.insert(stations.end(), groundStations.begin(), groundStations.end());
-    for(int i = 0; i != stations.size(); ++i) {
-        stations[i].deviceId = i;
-    }
 
-    std::cout << "There are " << satellites.size() << " satellites and " << groundStations.size() << " ground stations making " << stations.size() << " total stations.\n";
+    Topology topology;
+    auto& stations = topology.setStationLoader<SatgenpyStationLoader>();
+    topology.setNetDeviceLoader<BaseNetDeviceLoader>(stations.getSatelliteCount() + stations.getGroundStationCount());
+    topology.setLinkLoader<SatgenpyLinkLoader>(50);
+    topology.setRouterImpl<SatgenpyRouterImpl>(50);
+    topology.loadAll();
 
-    LinkManager3d links;
-    links.loadLinks("isls.txt");
-    links.setRouteFolder("routes", 50, simTime);
-
-    SatelliteRenderer renderer;
-    renderer.scale = 1.f / 20000;
-    links.scale = renderer.scale;
-    renderer.genSatellites(satellites.size(), 4.f, sf::Color::Red);
-    renderer.genSatellites(groundStations.size(), 4.f, sf::Color::White, satellites.size());
-    renderer.cam.pos = {0, 0, -2000};
-    renderer.cam.setOrientation({0, 0, 0}, {0, 0, 1});
+    topology.prepareRendering();
+    topology.cam.scale = 1.f / 20000;
+    topology.cam.pos = {0, 0, -2000};
+    topology.cam.setOrientation({0, 0, 0}, {0, 0, 1});  
 
     sf::RenderWindow window(sf::VideoMode(1920, 1080), "Satellites", sf::Style::None);
     sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920, 1080));
@@ -76,11 +63,7 @@ int main(int argc, char** argv) {
             elapsed += tickAmount;
             if(elapsed < simTime) {
             // std::cout << "elapsed " << elapsed << '\n';
-                for(auto& station : stations) {
-                    station.update(tickAmount);
-                }
-
-                links.updateRoutes(tickAmount);
+                topology.update(tickAmount);
             }
         }
 
@@ -109,13 +92,12 @@ int main(int argc, char** argv) {
             if(height > maxHeight) height = maxHeight;
             else if (height < -maxHeight) height = -maxHeight;
 
-            renderer.cam.pos = {std::cos(horizAngle), std::sin(horizAngle), height};
-            renderer.cam.setOrientation({0, 0, 0}, {0, 0, 1});
+            topology.cam.pos = {std::cos(horizAngle), std::sin(horizAngle), height};
+            topology.cam.setOrientation({0, 0, 0}, {0, 0, 1});
 
             window.clear(sf::Color::Black);
-            renderer.drawSatellites(stations, window);
-            // links.drawLinks(stations, window, renderer.cam);
-            links.drawRoutes(stations, window, renderer.cam);
+
+            topology.draw(window);
             window.display();
         }
     }

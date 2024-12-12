@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "types.h"
 #include "vec3.h"
@@ -22,6 +23,7 @@ public:
 
     Vec3 pos;
     NetDeviceId deviceId;
+    std::string tag;
 private:
     std::unique_ptr<StationMover> mover;
 };

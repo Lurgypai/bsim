@@ -1,12 +1,19 @@
 #pragma once
 
 #include <deque>
+#include <vector>
 
 #include "packet.h"
 
 class Router;
+class NetDevice;
 
 // CANT SEND AND RECEIVE SIMULTANEOUSLY, HMM
+struct InFlightPacket {
+    Packet packet;
+    NetDevice* dest;
+    Milliseconds txRemaining;
+};
 
 // A thing that sends and receives packets
 class NetDevice {
@@ -22,38 +29,31 @@ public:
     // Sends/Queues a packet
     void queue(const Packet& packet);
 
-    // Sends queued packets
-    void update(Milliseconds delta, Router& router);
+    bool hasPackets() const;
+    bool isBusy() const;
 
-    bool isSending() const;
-    bool isReceiving() const;
+    const Packet& peekNextPacket() const;
+
+    void addActiveLink();
+    void removeActiveLink();
+
+    void putNextInFlight(NetDevice* nextDevice);
+    std::vector<InFlightPacket>& getInFlightPackets();
+
     int getReceivedCount() const;
     NetDeviceId getId() const;
 
-    const NetDevice* getNextDevice() const;
-
-    Milliseconds getTxRemaining() const;
-private:
     void continueSend(Milliseconds delta);
-    void beginSend(Router& router);
-    void endSend();
-    void beginReceive();
-    void endReceive();
+private:
 
     NetDeviceId id;
 
-    // remaining time till transfer is complete
-    Milliseconds tx_remaining;
-
     std::deque<Packet> packets;
 
-    NetDevice* curNextDevice;
-
-    // current packet being sent/received
-    Packet receiving;
-
-    bool isSending_;
-    bool isReceiving_;
+    // may need to switch to a non-contiguous so that removal later is more efficient
+    std::vector<InFlightPacket> inFlightPackets;
 
     int receivedCount;
+    int curActiveLinks;
+    int maxActiveLinks;
 };
