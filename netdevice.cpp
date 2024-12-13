@@ -1,6 +1,5 @@
 #include "netdevice.h"
 #include <stdexcept>
-#include <iostream>
 
 NetDevice::NetDevice(NetDeviceId id_) :
     id{id_},
@@ -14,7 +13,6 @@ NetDevice::NetDevice(NetDeviceId id_) :
 void NetDevice::queue(const Packet& packet) {
     if(packet.target == id) {
         ++receivedCount;
-        std::cout << "rec'd\n";
         return;
     }
 

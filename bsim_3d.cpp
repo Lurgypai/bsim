@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     auto last_physics = high_resolution_clock::now();
     auto last_render = last_physics;
 
-    topology.queuePacket(Packet{1621, 1671}, 1621);
+    //topology.queuePacket(Packet{1621, 1671}, 1621);
     for(;;) {
         auto now = high_resolution_clock::now();
 
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
             elapsed += tickAmount;
             if(elapsed < simTime) {
 
-                // topology.queuePacket(Packet{1621, 1671}, 1621);
+                topology.queuePacket(Packet{1621, 1671}, 1621);
                 // std::cout << "elapsed " << elapsed << '\n';
                 topology.update(tickAmount);
             }

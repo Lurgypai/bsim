@@ -97,7 +97,11 @@ void Topology::update(Milliseconds delta) {
     
     for(auto& netDevice : netDeviceManager) {
         endSend(netDevice, netDeviceManager, linkManager);
+    }
+    for(auto& netDevice : netDeviceManager) {
         tryBeginSend(netDevice, linkManager, netDeviceManager, router);
+    }
+    for(auto& netDevice : netDeviceManager) {
         continueSend(netDevice, delta);
     }
 }
