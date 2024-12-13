@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
     Milliseconds elapsed = 0;
     // amount of time to tick the simulation forward
-    Milliseconds tickAmount = 50 * 50;
+    Milliseconds tickAmount = 50;
     // amount of time between updates to the simulation
     auto physics_rate = milliseconds(50); // when this and the above match you're running in real time
     // frame rate
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     auto last_physics = high_resolution_clock::now();
     auto last_render = last_physics;
 
-
+    topology.queuePacket(Packet{1621, 1671}, 1621);
     for(;;) {
         auto now = high_resolution_clock::now();
 
@@ -62,7 +62,9 @@ int main(int argc, char** argv) {
 
             elapsed += tickAmount;
             if(elapsed < simTime) {
-            // std::cout << "elapsed " << elapsed << '\n';
+
+                // topology.queuePacket(Packet{1621, 1671}, 1621);
+                // std::cout << "elapsed " << elapsed << '\n';
                 topology.update(tickAmount);
             }
         }

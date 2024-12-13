@@ -8,7 +8,7 @@ using RouteMap = std::unordered_map<NetDeviceId, std::unordered_map<NetDeviceId,
 
 class SatgenpyRouterImpl : public RouterImpl {
 public:
-    SatgenpyRouterImpl(int rate_);
+    SatgenpyRouterImpl(Milliseconds rate_);
     virtual ~SatgenpyRouterImpl() {};
 private:
     virtual NetDeviceId findNext(NetDeviceId curId, NetDeviceId destId) override;
@@ -16,7 +16,7 @@ private:
 
     RouteMap routes;
 
-    int rate;
-    int remainder;
-    int elapsed;
+    Milliseconds rate;
+    Milliseconds remainder;
+    Milliseconds elapsed;
 };

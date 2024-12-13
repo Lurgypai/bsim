@@ -15,8 +15,8 @@ void LinkManager::load() {
     links = loader->loadLinks();
 }
 
-void LinkManager::updateLinks(Milliseconds delta) {
-    loader->updateLinks(delta, links);
+void LinkManager::updateLinks(Milliseconds delta, StationManager& station) {
+    loader->updateLinks(delta, links, station);
 }
 
 const Link& LinkManager::getLink(NetDeviceId source, NetDeviceId dest) const {
@@ -25,4 +25,8 @@ const Link& LinkManager::getLink(NetDeviceId source, NetDeviceId dest) const {
 
 Link& LinkManager::getLink(NetDeviceId source, NetDeviceId dest) {
     return links.at(source).at(dest);
+}
+
+const LinkMap& LinkManager::getLinks() const {
+    return links;
 }

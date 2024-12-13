@@ -1,5 +1,6 @@
 #include "netdevice.h"
 #include <stdexcept>
+#include <iostream>
 
 NetDevice::NetDevice(NetDeviceId id_) :
     id{id_},
@@ -13,6 +14,7 @@ NetDevice::NetDevice(NetDeviceId id_) :
 void NetDevice::queue(const Packet& packet) {
     if(packet.target == id) {
         ++receivedCount;
+        std::cout << "rec'd\n";
         return;
     }
 
@@ -40,10 +42,10 @@ void NetDevice::removeActiveLink() {
     --curActiveLinks;
 }
 
-void NetDevice::putNextInFlight(NetDevice* nextDevice) {
+void NetDevice::putNextInFlight(NetDeviceId dest) {
     inFlightPackets.push_back(InFlightPacket{
         packets.back(),
-        nextDevice,
+        dest,
         TX_DELAY
     });
 

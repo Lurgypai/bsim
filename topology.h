@@ -31,6 +31,8 @@ public:
     void prepareRendering();
     void draw(sf::RenderTarget& target);
     Camera cam;
+
+    void queuePacket(Packet p, NetDeviceId source);
 private:
     NetDeviceManager netDeviceManager;
     StationManager stationManager;

@@ -2,7 +2,7 @@
 
 #include "satgenpy_helper.h"
 
-SatgenpyRouterImpl::SatgenpyRouterImpl(int rate_) :
+SatgenpyRouterImpl::SatgenpyRouterImpl(Milliseconds rate_) :
     rate{rate_},
     remainder{0},
     elapsed{0}

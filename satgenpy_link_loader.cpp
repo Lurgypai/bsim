@@ -2,9 +2,10 @@
 #include <memory>
 #include <string>
 
+#include "station_manager.h"
 #include "satgenpy_helper.h"
 
-SatgenpyLinkLoader::SatgenpyLinkLoader(int rate_) :
+SatgenpyLinkLoader::SatgenpyLinkLoader(Milliseconds rate_) :
     rate{rate_},
     remainder{0},
     elapsed{0}
@@ -23,7 +24,7 @@ LinkMap SatgenpyLinkLoader::loadLinks() {
     return links;
 }
 
-void SatgenpyLinkLoader::updateLinks(Milliseconds delta, LinkMap& links) {
+void SatgenpyLinkLoader::updateLinks(Milliseconds delta, LinkMap& links, StationManager& stations) {
     remainder += delta;
     while(remainder >= rate) {
         remainder -= rate;

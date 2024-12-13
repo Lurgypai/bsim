@@ -5,13 +5,14 @@
 
 #include "readers.h"
 
+SatgenpyStationLoader::SatgenpyStationLoader() :
+    groundStationCount{readGroundStations("ground_stations.txt").size()},
+    satelliteCount{readSatellites("tles.txt").size()}
+{}
 
 std::vector<Station> SatgenpyStationLoader::loadStations() {
     auto gs = readGroundStations("ground_stations.txt");
     auto s = readSatellites("tles.txt");
-
-    groundStationCount = gs.size();
-    satelliteCount = s.size();
 
     std::cout << "Loaded " << gs.size() << " ground stations and " << s.size() << " satellites.\n";
 

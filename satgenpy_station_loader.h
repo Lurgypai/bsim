@@ -5,6 +5,8 @@
 
 class SatgenpyStationLoader : public StationLoader {
 public:
+    SatgenpyStationLoader();
+
     virtual ~SatgenpyStationLoader() {};
     virtual std::vector<Station> loadStations() override;
     virtual std::unique_ptr<StationLoader> clone() override;
@@ -12,6 +14,6 @@ public:
     int getGroundStationCount() const;
     int getSatelliteCount() const;
 private:
-    int groundStationCount;
-    int satelliteCount;
+    size_t groundStationCount;
+    size_t satelliteCount;
 };

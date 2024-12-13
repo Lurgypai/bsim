@@ -11,7 +11,7 @@ class NetDevice;
 // CANT SEND AND RECEIVE SIMULTANEOUSLY, HMM
 struct InFlightPacket {
     Packet packet;
-    NetDevice* dest;
+    NetDeviceId dest;
     Milliseconds txRemaining;
 };
 
@@ -37,13 +37,14 @@ public:
     void addActiveLink();
     void removeActiveLink();
 
-    void putNextInFlight(NetDevice* nextDevice);
+    void putNextInFlight(NetDeviceId dest);
     std::vector<InFlightPacket>& getInFlightPackets();
 
     int getReceivedCount() const;
     NetDeviceId getId() const;
 
     void continueSend(Milliseconds delta);
+    int maxActiveLinks;
 private:
 
     NetDeviceId id;
@@ -55,5 +56,4 @@ private:
 
     int receivedCount;
     int curActiveLinks;
-    int maxActiveLinks;
 };

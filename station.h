@@ -16,6 +16,9 @@ public:
     Station(const Station& other);
     Station& operator=(const Station& other);
 
+    Station(Station&& other) = default;
+    Station& operator=(Station&& other) = default;
+
     template<typename Mover, typename... Args>
     Mover& loadMover(Args&&... args);
 

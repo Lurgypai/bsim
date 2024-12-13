@@ -23,6 +23,8 @@ public:
 
     std::vector<NetDevice>::iterator begin();
     std::vector<NetDevice>::iterator end();
+
+    void queuePacket(Packet p, NetDeviceId source);
 private:
     std::unique_ptr<NetDeviceLoader> loader;
     std::vector<NetDevice> devices;

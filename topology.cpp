@@ -1,6 +1,7 @@
 #include "topology.h"
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Color.hpp>
 
 Topology::Topology() :
     cam{},
@@ -23,11 +24,10 @@ static void tryBeginSend(NetDevice& device,
                          LinkManager& links,
                          NetDeviceManager& netDevices,
                          Router& router) {
-    if(!device.hasPackets()) return;
 
     // go until we hit the max concurrent links active
     // this will cause devices that are update earlier to have sending precedence.
-    while(!device.isBusy()) {
+    while(device.hasPackets() && !device.isBusy()) {
         const Packet& nextPacket = device.peekNextPacket();
         NetDeviceId nextDeviceId = router.findNext(device.getId(), nextPacket.target);
 
@@ -45,7 +45,7 @@ static void tryBeginSend(NetDevice& device,
         nextDevice.addActiveLink();
 
         // pop the packet and set up an in flight entry to track its progress
-        device.putNextInFlight(&nextDevice);
+        device.putNextInFlight(nextDevice.getId());
 
         // set the uplink and downlink as active
         upLink.busy = true;
@@ -59,14 +59,18 @@ static void continueSend(NetDevice& device, Milliseconds delta) {
 }
 
 static void endSend(NetDevice& device,
+                    NetDeviceManager& devices,
                     LinkManager& links) {
     // for each in flight packet
     auto& inFlightPackets = device.getInFlightPackets();
-    for(auto iter = inFlightPackets.begin(); iter != inFlightPackets.end(); ++iter) {
-        if(iter->txRemaining != 0) continue;
+    for(auto iter = inFlightPackets.begin(); iter != inFlightPackets.end();) {
+        if(iter->txRemaining != 0) {
+            ++iter;
+            continue;
+        }
 
-        auto& destDevice = *(iter->dest);
-        NetDeviceId destId = destDevice.getId();
+        NetDeviceId destId = iter->dest;
+        auto& destDevice = devices.getNetDevice(destId);
 
         // set links as available
         Link& upLink = links.getLink(device.getId(), destId);
@@ -88,15 +92,13 @@ static void endSend(NetDevice& device,
 
 void Topology::update(Milliseconds delta) {
     stationManager.update(delta);
-    linkManager.updateLinks(delta);
+    linkManager.updateLinks(delta, stationManager);
     router.update(delta, stationManager, linkManager);
     
-    // update network
-
     for(auto& netDevice : netDeviceManager) {
+        endSend(netDevice, netDeviceManager, linkManager);
         tryBeginSend(netDevice, linkManager, netDeviceManager, router);
         continueSend(netDevice, delta);
-        endSend(netDevice, linkManager);
     }
 }
 
@@ -122,6 +124,7 @@ void Topology::prepareRendering() {
 }
 
 void Topology::draw(sf::RenderTarget& target) {
+    /* draw stations */
     for(auto& circle : stations) {
         if(circle.id < 0) continue; // earth
         auto& station = stationManager.getStations()[circle.id];
@@ -139,4 +142,31 @@ void Topology::draw(sf::RenderTarget& target) {
     for(auto& station : stations) {
         target.draw(station.shape);
     }
+
+    for(const auto& [sourceId, route] : linkManager.getLinks()) {
+        const Station& source = stationManager.getStations()[sourceId];
+        Vec3 p1 = cam.project(source.pos);
+        if(p1.z < 0) continue;
+
+        for(const auto& [destId, link] : route) {
+            const Station& dest = stationManager.getStations()[destId];
+            Vec3 p2 = cam.project(dest.pos);
+            if(p2.z < 0) continue;
+
+            auto color = sf::Color::Red;
+            if(link.busy) color = sf::Color::White;
+            else if(source.tag == "ground" || dest.tag == "ground") color = sf::Color::Green;
+
+            sf::Vertex line[]{
+                sf::Vertex{sf::Vector2f{static_cast<float>(p1.x), static_cast<float>(p1.y)}, color},
+                sf::Vertex{sf::Vector2f{static_cast<float>(p2.x), static_cast<float>(p2.y)}, color}
+            };
+
+            target.draw(line, 2, sf::Lines);
+        }
+    }
+}
+
+void Topology::queuePacket(Packet p, NetDeviceId source) {
+    netDeviceManager.queuePacket(p, source);
 }

@@ -9,7 +9,8 @@ std::vector<NetDevice> BaseNetDeviceLoader::loadNetDevices() {
     std::vector<NetDevice> devices;
     devices.reserve(deviceCount);
     for(int i = 0; i != deviceCount; ++i) {
-        devices[i] = NetDevice{i};
+        devices.emplace_back(i);
+        devices.back().maxActiveLinks = 1;
     }
     return devices;
 }

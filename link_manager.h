@@ -13,11 +13,13 @@ struct Link {
 
 using LinkMap = std::unordered_map<NetDeviceId, std::unordered_map<NetDeviceId, Link>>;
 
+class StationManager;
+
 class LinkLoader {
 public:
     virtual ~LinkLoader() {};
     virtual LinkMap loadLinks() = 0;
-    virtual void updateLinks(Milliseconds delta, LinkMap& links) = 0;
+    virtual void updateLinks(Milliseconds delta, LinkMap& links, StationManager& stations) = 0;
     virtual std::unique_ptr<LinkLoader> clone() = 0;
 };
 
@@ -33,9 +35,10 @@ public:
     Loader& setLoader(Args&&... args);
 
     void load();
-    void updateLinks(Milliseconds delta);
+    void updateLinks(Milliseconds delta, StationManager& station);
     const Link& getLink(NetDeviceId source, NetDeviceId target) const;
     Link& getLink(NetDeviceId source, NetDeviceId target);
+    const LinkMap& getLinks() const;
 private:
     std::unique_ptr<LinkLoader> loader;
     LinkMap links;
